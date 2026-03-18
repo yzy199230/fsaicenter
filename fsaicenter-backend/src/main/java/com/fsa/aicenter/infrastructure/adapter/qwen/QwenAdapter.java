@@ -1060,7 +1060,7 @@ public class QwenAdapter implements AiProviderAdapter {
             conversationRef.set(conversation);
 
             // 在后台线程中执行连接和发送音频
-            Thread.startVirtualThread(() -> {
+            Thread asrWorker = new Thread(() -> {
                 try {
                     // 连接
                     conversation.connect();
@@ -1115,7 +1115,9 @@ public class QwenAdapter implements AiProviderAdapter {
                     log.error("实时ASR流式调用异常", e);
                     sink.error(AiProviderException.networkError(getProviderCode(), e.getMessage(), e));
                 }
-            });
+            }, "qwen-realtime-asr-worker");
+            asrWorker.setDaemon(true);
+            asrWorker.start();
 
             // 设置取消回调
             sink.onCancel(() -> {

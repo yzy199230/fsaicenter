@@ -23,7 +23,8 @@
       "Bash(ls e:/xx/aicy/fsaicenter/fsaicenter-backend/target/surefire-reports/*.txt)",
       "Bash(mvn test:*)",
       "Bash(ls -la /e/xx/aicy/fsaicenter/fsaicenter-backend/src/main/java/com/fsa/aicenter/infrastructure/adapter/*/)",
-      "Bash(xargs head:*)"
+      "Bash(xargs head:*)",
+      "WebSearch"
     ]
   }
 }

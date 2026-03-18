@@ -214,10 +214,7 @@ public class ModelHealthCheckService {
         // 根据模型类型构建不同的测试请求
         if (model.getType() == ModelType.CHAT) {
             builder.messages(List.of(
-                    Message.builder()
-                            .role("user")
-                            .content("Hi")
-                            .build()
+                    Message.user("Hi")
             ));
             builder.maxTokens(5);  // 限制token数量以减少成本
         } else if (model.getType() == ModelType.EMBEDDING) {
@@ -225,10 +222,7 @@ public class ModelHealthCheckService {
         } else {
             // 其他类型使用简单的chat请求
             builder.messages(List.of(
-                    Message.builder()
-                            .role("user")
-                            .content("Hi")
-                            .build()
+                    Message.user("Hi")
             ));
             builder.maxTokens(5);
         }
