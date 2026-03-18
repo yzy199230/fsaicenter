@@ -51,6 +51,9 @@ bin/
 # IDE - VS Code
 .vscode/
 
+# Claude Code
+.claude/
+
 # IDE - NetBeans
 /nbproject/private/
 /nbbuild/
