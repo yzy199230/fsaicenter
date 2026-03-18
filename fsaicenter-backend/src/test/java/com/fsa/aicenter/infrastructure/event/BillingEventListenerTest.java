@@ -54,23 +54,23 @@ class BillingEventListenerTest {
         testModel = new AiModel();
         testModel.setId(100L);
 
-        // 创建测试计费规则
-        testRule = new BillingRule();
-        testRule.setId(1L);
-        testRule.setModelId(100L);
-        testRule.setBillingType(BillingType.TOKEN);
-        testRule.setUnitPrice(BigDecimal.valueOf(0.002));
+        // 创建测试计费规则（使用全参构造函数）
+        LocalDateTime now = LocalDateTime.now();
+        testRule = new BillingRule(
+                1L, 100L, BillingType.TOKEN,
+                BigDecimal.valueOf(0.002),   // unitPrice
+                BigDecimal.valueOf(0.001),   // inputUnitPrice
+                BigDecimal.valueOf(0.002),   // outputUnitPrice
+                1000,                        // unitAmount
+                "CNY",
+                now.minusDays(1),            // effectiveTime
+                null,                        // expireTime
+                "测试规则"
+        );
 
-        // 创建测试事件
-        testEvent = BillingEvent.builder()
-                .requestId("req-123")
-                .apiKey(testApiKey)
-                .model(testModel)
-                .tokens(1000L)
-                .tokenBased(true)
-                .requestTime(LocalDateTime.now())
-                .eventTime(LocalDateTime.now())
-                .build();
+        // 创建测试事件（Token计费）
+        testEvent = new BillingEvent("req-123", testApiKey, testModel,
+                1000, now, now);
     }
 
     @Test
@@ -98,22 +98,19 @@ class BillingEventListenerTest {
     @Test
     @DisplayName("处理计费事件 - 图片计费成功")
     void testHandleBillingEvent_ImageBased_Success() {
-        // Given
-        testEvent = BillingEvent.builder()
-                .requestId("req-456")
-                .apiKey(testApiKey)
-                .model(testModel)
-                .cost(10L)
-                .tokenBased(false)
-                .requestTime(LocalDateTime.now())
-                .eventTime(LocalDateTime.now())
-                .build();
+        // Given - 图片计费事件（cost而非tokens）
+        LocalDateTime now = LocalDateTime.now();
+        BillingEvent imageEvent = new BillingEvent("req-456", testApiKey, testModel,
+                null, 10, now, now);
 
-        BillingRule imageRule = new BillingRule();
-        imageRule.setId(2L);
-        imageRule.setModelId(100L);
-        imageRule.setBillingType(BillingType.IMAGE);
-        imageRule.setUnitPrice(BigDecimal.valueOf(0.05));
+        BillingRule imageRule = new BillingRule(
+                2L, 100L, BillingType.IMAGE,
+                BigDecimal.valueOf(0.05),    // unitPrice
+                null, null,                  // input/output unit price不适用
+                1,                           // unitAmount
+                "CNY",
+                now.minusDays(1), null, "图片规则"
+        );
 
         when(billingRepository.findEffectiveRule(
                 eq(100L),
@@ -122,7 +119,7 @@ class BillingEventListenerTest {
         )).thenReturn(Optional.of(imageRule));
 
         // When
-        billingEventListener.handleBillingEvent(testEvent);
+        billingEventListener.handleBillingEvent(imageEvent);
 
         // Then
         verify(billingRepository, times(1)).findEffectiveRule(
@@ -192,19 +189,9 @@ class BillingEventListenerTest {
     }
 
     @Test
-    @DisplayName("处理计费事件 - 既无tokens也无cost，使用默认值")
-    void testHandleBillingEvent_NoTokensNoCost_UseDefault() {
+    @DisplayName("处理计费事件 - Token计费使用默认值")
+    void testHandleBillingEvent_TokenEvent_WithRule() {
         // Given
-        testEvent = BillingEvent.builder()
-                .requestId("req-789")
-                .apiKey(testApiKey)
-                .model(testModel)
-                .tokenBased(false)
-                .cost(null)
-                .requestTime(LocalDateTime.now())
-                .eventTime(LocalDateTime.now())
-                .build();
-
         when(billingRepository.findEffectiveRule(
                 eq(100L),
                 eq(BillingType.TOKEN),

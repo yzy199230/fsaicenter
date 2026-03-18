@@ -44,22 +44,24 @@ public class ApiKeyEncryptor {
      * @param encryptionKey Base64编码的256位密钥
      */
     public ApiKeyEncryptor(@Value("${security.api-key.encryption-key:}") String encryptionKey) {
+        SecretKey key;
         if (encryptionKey == null || encryptionKey.isBlank()) {
             log.warn("未配置加密密钥，使用随机生成的密钥（仅用于开发环境）");
-            this.secretKey = generateRandomKey();
+            key = generateRandomKey();
         } else {
             try {
                 byte[] decodedKey = Base64.getDecoder().decode(encryptionKey);
                 if (decodedKey.length != 32) {
                     throw new IllegalArgumentException("加密密钥必须是256位（32字节）");
                 }
-                this.secretKey = new SecretKeySpec(decodedKey, ALGORITHM);
+                key = new SecretKeySpec(decodedKey, ALGORITHM);
                 log.info("加密密钥加载成功");
             } catch (Exception e) {
                 log.error("加密密钥加载失败，使用随机密钥", e);
-                this.secretKey = generateRandomKey();
+                key = generateRandomKey();
             }
         }
+        this.secretKey = key;
     }
 
     /**

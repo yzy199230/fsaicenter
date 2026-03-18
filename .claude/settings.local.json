@@ -19,7 +19,11 @@
       "Bash(curl -sL \"https://repo.maven.apache.org/maven2/com/github/benmanes/caffeine/caffeine/maven-metadata.xml\")",
       "Bash(curl -sL \"https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/maven-metadata.xml\")",
       "Bash(ls e:/xx/aicy/fsaicenter/fsaicenter-frontend/.eslintrc* e:/xx/aicy/fsaicenter/fsaicenter-frontend/eslint.config.*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(ls e:/xx/aicy/fsaicenter/fsaicenter-backend/target/surefire-reports/*.txt)",
+      "Bash(mvn test:*)",
+      "Bash(ls -la /e/xx/aicy/fsaicenter/fsaicenter-backend/src/main/java/com/fsa/aicenter/infrastructure/adapter/*/)",
+      "Bash(xargs head:*)"
     ]
   }
 }

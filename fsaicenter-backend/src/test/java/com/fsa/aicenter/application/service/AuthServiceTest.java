@@ -50,7 +50,7 @@ class AuthServiceTest {
         testUser.setUsername("admin");
         testUser.setPassword("$2a$10$encodedPassword");
         testUser.setRealName("管理员");
-        testUser.setEnabled(true);
+        testUser.setStatus(AdminUser.Status.ENABLED.getCode());
 
         // 创建登录请求
         loginRequest = new LoginRequest();
@@ -97,7 +97,7 @@ class AuthServiceTest {
             authService.login(loginRequest, "192.168.1.1");
         });
 
-        assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
+        assertEquals(ErrorCode.USER_NOT_FOUND.getCode(), exception.getCode());
         verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
 
@@ -113,7 +113,7 @@ class AuthServiceTest {
             authService.login(loginRequest, "192.168.1.1");
         });
 
-        assertEquals(ErrorCode.PASSWORD_ERROR, exception.getErrorCode());
+        assertEquals(ErrorCode.PASSWORD_ERROR.getCode(), exception.getCode());
         verify(adminUserRepository, never()).updateLoginInfo(anyLong(), anyString());
     }
 
@@ -121,7 +121,7 @@ class AuthServiceTest {
     @DisplayName("登录失败 - 用户已禁用")
     void testLogin_UserDisabled() {
         // Given
-        testUser.setEnabled(false);
+        testUser.setStatus(AdminUser.Status.DISABLED.getCode());
         when(adminUserRepository.findByUsername("admin")).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("password123", "$2a$10$encodedPassword")).thenReturn(true);
 
@@ -130,7 +130,7 @@ class AuthServiceTest {
             authService.login(loginRequest, "192.168.1.1");
         });
 
-        assertEquals(ErrorCode.USER_DISABLED, exception.getErrorCode());
+        assertEquals(ErrorCode.USER_DISABLED.getCode(), exception.getCode());
         verify(adminUserRepository, never()).updateLoginInfo(anyLong(), anyString());
     }
 

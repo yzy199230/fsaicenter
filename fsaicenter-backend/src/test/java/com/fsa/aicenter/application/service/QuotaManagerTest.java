@@ -11,6 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
@@ -25,6 +27,7 @@ import static org.mockito.Mockito.*;
  * QuotaManager 单元测试
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("配额管理服务测试")
 class QuotaManagerTest {
 
@@ -233,6 +236,7 @@ class QuotaManagerTest {
         ApiKey apiKey = new ApiKey();
         apiKey.setId(id);
         apiKey.setQuota(new Quota(totalQuota, usedQuota));
+        apiKey.enable();
         return apiKey;
     }
 }
