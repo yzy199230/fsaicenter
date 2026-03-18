@@ -17,6 +17,18 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'arco-design': ['@arco-design/web-vue'],
+          echarts: ['echarts', 'vue-echarts'],
+          vue: ['vue', 'vue-router', 'pinia']
+        }
+      }
+    }
+  },
   server: {
     port: 3000,
     proxy: {

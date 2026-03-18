@@ -1,7 +1,7 @@
 package com.fsa.aicenter.infrastructure.event;
 
 import com.fsa.aicenter.application.event.BillingEvent;
-import com.fsa.aicenter.domain.aimodel.aggregate.AiModel;
+import com.fsa.aicenter.domain.model.aggregate.AiModel;
 import com.fsa.aicenter.domain.apikey.aggregate.ApiKey;
 import com.fsa.aicenter.domain.apikey.repository.ApiKeyRepository;
 import com.fsa.aicenter.domain.billing.aggregate.BillingRecord;

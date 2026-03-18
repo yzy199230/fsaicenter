@@ -207,7 +207,7 @@ const handleSubmit = async () => {
   submitLoading.value = true
   try {
     if (currentEditId.value) {
-      const { code, ...updateData } = formData
+      const { code: _code, ...updateData } = formData
       await providerApi.update(currentEditId.value, updateData)
       Message.success('更新成功')
     } else {
