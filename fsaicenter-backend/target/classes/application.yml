@@ -1,0 +1,164 @@
+spring:
+  application:
+    name: fsaicenter
+  profiles:
+    active: dev
+
+  # 数据源配置
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:fsaicenter}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+
+  # Redis配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+          max-wait: 3000ms
+
+  # Redisson配置
+  redisson:
+    config: |
+      singleServerConfig:
+        address: "redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}"
+        password: ${REDIS_PASSWORD:}
+        database: ${REDIS_DATABASE:0}
+        connectionPoolSize: 20
+        connectionMinimumIdleSize: 5
+        timeout: 5000
+        connectTimeout: 10000
+        idleConnectionTimeout: 10000
+
+  # Jackson配置
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000  # 1小时
+      cache-null-values: false
+
+# MyBatis Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+# Sa-Token配置
+sa-token:
+  # token名称
+  token-name: Authorization
+  # token有效期（单位：秒）默认30天，-1代表永不过期
+  timeout: 2592000
+  # token临时有效期（指定时间内无操作就视为token过期）单位：秒
+  activity-timeout: 86400
+  # 是否允许同一账号并发登录（为true时允许一起登录，为false时新登录挤掉旧登录）
+  is-concurrent: true
+  # 在多人登录同一账号时，是否共用一个token（为true时所有登录共用一个token，为false时每次登录新建一个token）
+  is-share: false
+  # token风格
+  token-style: uuid
+  # 是否输出操作日志
+  is-log: false
+  # 是否从cookie中读取token
+  is-read-cookie: false
+  # 是否从请求头中读取token
+  is-read-header: true
+
+# Knife4j配置
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enable-swagger-models: true
+    enable-document-manage: true
+    swagger-model-name: 实体类列表
+  production: false
+
+# 服务器配置
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  tomcat:
+    uri-encoding: UTF-8
+    threads:
+      max: 200
+      min-spare: 10
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.fsa.aicenter: DEBUG
+    org.springframework.web: INFO
+    org.springframework.data.redis: INFO
+    com.baomidou.mybatisplus: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: logs/fsaicenter.log
+    max-size: 100MB
+    max-history: 30
+
+# 应用配置
+app:
+  # API Key配置
+  api-key:
+    # 默认配额（Token数）
+    default-quota: 1000000
+    # 默认速率限制（每分钟请求数）
+    default-rate-limit-rpm: 60
+    # 默认速率限制（每分钟Token数）
+    default-rate-limit-tpm: 100000
+
+  # 模型配置
+  model:
+    # 健康检查间隔（秒）
+    health-check-interval: 300
+    # 请求超时时间（秒）
+    request-timeout: 60
+    # 最大重试次数
+    max-retry: 2
+
+  # 计费配置
+  billing:
+    # 是否启用计费
+    enabled: true
+    # 计费货币
+    currency: CNY

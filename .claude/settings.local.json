@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /e/xx/aicy/fsaicenter log --oneline -20)",
+      "Bash(find fsaicenter-frontend/src -type f -name *.vue -o -name *.js -o -name *.ts -o -name *.json)",
+      "Bash(find e:/xx/aicy/fsaicenter/fsaicenter-frontend/src -name *.vue -o -name *.ts)",
+      "Bash(rm -rf node_modules package-lock.json)",
+      "Bash(npm install:*)",
+      "Bash(npx vue-tsc:*)",
+      "Bash(npx vite:*)",
+      "Bash(npm list:*)"
+    ]
+  }
+}
