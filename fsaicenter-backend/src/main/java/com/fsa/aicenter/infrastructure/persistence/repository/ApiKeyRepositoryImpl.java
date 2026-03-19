@@ -167,6 +167,23 @@ public class ApiKeyRepositoryImpl implements ApiKeyRepository {
         modelAccessMapper.deleteByApiKeyIdAndModelId(apiKeyId, modelId);
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void syncModelAccess(Long apiKeyId, Set<Long> allowedModelIds) {
+        log.info("Syncing model access for apiKeyId={}, modelCount={}", apiKeyId,
+            allowedModelIds != null ? allowedModelIds.size() : 0);
+
+        // 先软删所有现有记录
+        modelAccessMapper.deleteAllByApiKeyId(apiKeyId);
+
+        // 重新插入允许的模型
+        if (allowedModelIds != null && !allowedModelIds.isEmpty()) {
+            for (Long modelId : allowedModelIds) {
+                saveModelAccess(apiKeyId, modelId, true);
+            }
+        }
+    }
+
     @Override
     public List<Long> findAccessibleModelIds(Long apiKeyId) {
         List<ApiKeyModelAccessPO> accessList = modelAccessMapper.selectByApiKeyId(apiKeyId);

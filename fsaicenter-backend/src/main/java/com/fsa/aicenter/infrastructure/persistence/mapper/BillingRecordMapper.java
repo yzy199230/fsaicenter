@@ -2,8 +2,7 @@ package com.fsa.aicenter.infrastructure.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.fsa.aicenter.infrastructure.persistence.entity.BillingRecordPO;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,46 +13,28 @@ import java.util.List;
 @Mapper
 public interface BillingRecordMapper extends BaseMapper<BillingRecordPO> {
 
-    /**
-     * 根据请求ID查询计费记录
-     *
-     * @param requestId 请求ID
-     * @return 计费记录
-     */
+    @Select("SELECT * FROM billing_record WHERE request_id = #{requestId} AND is_deleted = 0")
     BillingRecordPO selectByRequestId(@Param("requestId") String requestId);
 
-    /**
-     * 根据API密钥ID和时间范围查询计费记录
-     *
-     * @param apiKeyId  API密钥ID
-     * @param startTime 开始时间
-     * @param endTime   结束时间
-     * @return 计费记录列表
-     */
+    @Select("SELECT * FROM billing_record WHERE api_key_id = #{apiKeyId} " +
+            "AND billing_time >= #{startTime} AND billing_time <= #{endTime} AND is_deleted = 0 ORDER BY billing_time DESC")
     List<BillingRecordPO> selectByApiKeyIdAndTimeRange(
         @Param("apiKeyId") Long apiKeyId,
         @Param("startTime") LocalDateTime startTime,
         @Param("endTime") LocalDateTime endTime
     );
 
-    /**
-     * 根据模型ID和时间范围查询计费记录
-     *
-     * @param modelId   模型ID
-     * @param startTime 开始时间
-     * @param endTime   结束时间
-     * @return 计费记录列表
-     */
+    @Select("SELECT * FROM billing_record WHERE model_id = #{modelId} " +
+            "AND billing_time >= #{startTime} AND billing_time <= #{endTime} AND is_deleted = 0 ORDER BY billing_time DESC")
     List<BillingRecordPO> selectByModelIdAndTimeRange(
         @Param("modelId") Long modelId,
         @Param("startTime") LocalDateTime startTime,
         @Param("endTime") LocalDateTime endTime
     );
 
-    /**
-     * 批量插入计费记录
-     *
-     * @param list 计费记录列表
-     */
+    @Insert("<script>INSERT INTO billing_record (request_id, api_key_id, model_id, billing_type, usage_amount, unit_price, total_cost, currency) VALUES " +
+            "<foreach collection='list' item='item' separator=','>" +
+            "(#{item.requestId}, #{item.apiKeyId}, #{item.modelId}, #{item.billingType}, #{item.usageAmount}, #{item.unitPrice}, #{item.totalCost}, #{item.currency})" +
+            "</foreach></script>")
     void insertBatch(@Param("list") List<BillingRecordPO> list);
 }

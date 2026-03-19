@@ -2,8 +2,7 @@ package com.fsa.aicenter.infrastructure.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.fsa.aicenter.infrastructure.persistence.entity.ModelPO;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -13,24 +12,21 @@ import java.util.List;
 @Mapper
 public interface ModelMapper extends BaseMapper<ModelPO> {
 
-    /**
-     * 根据模型代码查询
-     */
+    @Select("SELECT * FROM ai_model WHERE model_code = #{modelCode} AND is_deleted = 0")
     ModelPO selectByCode(@Param("modelCode") String modelCode);
 
-    /**
-     * 根据模型类型查询
-     */
+    @Select("SELECT * FROM ai_model WHERE model_type = #{modelType} AND is_deleted = 0 ORDER BY sort_order")
     List<ModelPO> selectByType(@Param("modelType") String modelType);
 
-    /**
-     * 根据模型类型和状态查询（启用的模型）
-     */
+    @Select("SELECT * FROM ai_model WHERE model_type = #{modelType} AND status = #{status} AND is_deleted = 0 ORDER BY sort_order")
     List<ModelPO> selectEnabledByType(@Param("modelType") String modelType, @Param("status") Integer status);
 
-    /**
-     * 条件查询模型列表
-     */
+    @Select("<script>SELECT * FROM ai_model WHERE is_deleted = 0" +
+            "<if test='keyword != null and keyword != \"\"'> AND (model_code LIKE CONCAT('%',#{keyword},'%') OR model_name LIKE CONCAT('%',#{keyword},'%'))</if>" +
+            "<if test='modelType != null and modelType != \"\"'> AND model_type = #{modelType}</if>" +
+            "<if test='providerId != null'> AND provider_id = #{providerId}</if>" +
+            "<if test='status != null'> AND status = #{status}</if>" +
+            " ORDER BY sort_order</script>")
     List<ModelPO> selectByCondition(@Param("keyword") String keyword,
                                     @Param("modelType") String modelType,
                                     @Param("providerId") Long providerId,

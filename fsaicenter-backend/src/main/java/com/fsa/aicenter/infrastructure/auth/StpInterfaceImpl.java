@@ -20,10 +20,15 @@ public class StpInterfaceImpl implements StpInterface {
 
     /**
      * 返回指定用户拥有的权限码集合
+     * SUPER_ADMIN角色拥有所有权限
      */
     @Override
     public List<String> getPermissionList(Object loginId, String loginType) {
         Long userId = Long.valueOf(loginId.toString());
+        List<String> roles = roleRepository.findRoleCodesByUserId(userId);
+        if (roles.contains("SUPER_ADMIN")) {
+            return List.of("*");
+        }
         return permissionRepository.findPermissionCodesByUserId(userId);
     }
 

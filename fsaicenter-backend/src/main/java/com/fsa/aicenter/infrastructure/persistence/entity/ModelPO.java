@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fsa.aicenter.infrastructure.persistence.handler.JsonbStringTypeHandler;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -40,7 +41,7 @@ public class ModelPO {
     /**
      * 模型配置(存储为JSONB)
      */
-    @TableField("config")
+    @TableField(value = "config", typeHandler = JsonbStringTypeHandler.class)
     private String config;
 
     @TableField("description")
@@ -49,7 +50,7 @@ public class ModelPO {
     /**
      * 模型能力配置(存储为JSONB)
      */
-    @TableField("capabilities")
+    @TableField(value = "capabilities", typeHandler = JsonbStringTypeHandler.class)
     private String capabilities;
 
     @TableField("status")

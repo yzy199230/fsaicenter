@@ -2,8 +2,7 @@ package com.fsa.aicenter.infrastructure.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.fsa.aicenter.infrastructure.persistence.entity.ProviderPO;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -13,13 +12,9 @@ import java.util.List;
 @Mapper
 public interface ProviderMapper extends BaseMapper<ProviderPO> {
 
-    /**
-     * 根据提供商代码查询
-     */
+    @Select("SELECT * FROM ai_provider WHERE provider_code = #{providerCode} AND is_deleted = 0")
     ProviderPO selectByCode(@Param("providerCode") String providerCode);
 
-    /**
-     * 查询所有启用的提供商
-     */
+    @Select("SELECT * FROM ai_provider WHERE status = #{status} AND is_deleted = 0 ORDER BY sort_order")
     List<ProviderPO> selectEnabled(@Param("status") Integer status);
 }

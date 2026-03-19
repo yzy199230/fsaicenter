@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -50,6 +51,9 @@ public class ApiKeyResponse {
 
     @Schema(description = "IP白名单")
     private Set<String> allowedIpWhitelist;
+
+    @Schema(description = "允许访问的模型ID列表")
+    private List<Long> allowedModelIds;
 
     @Schema(description = "过期时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

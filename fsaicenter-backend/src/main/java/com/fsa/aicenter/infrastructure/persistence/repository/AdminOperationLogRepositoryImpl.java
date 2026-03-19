@@ -59,15 +59,14 @@ public class AdminOperationLogRepositoryImpl implements AdminOperationLogReposit
                 .id(po.getId())
                 .userId(po.getUserId())
                 .username(po.getUsername())
-                .operation(po.getOperation())
-                .method(po.getMethod())
-                .params(po.getParams())
-                .ip(po.getIp())
-                .location(po.getLocation())
+                .operation(po.getOperationType())
+                .method(po.getRequestMethod())
+                .params(po.getRequestParams())
+                .ip(po.getRequestIp())
                 .userAgent(po.getUserAgent())
-                .executeTime(po.getExecuteTime())
-                .status(po.getStatus())
-                .errorMsg(po.getErrorMsg())
+                .executeTime(po.getResponseTimeMs())
+                .status(po.getResponseStatus())
+                .errorMsg(po.getErrorMessage())
                 .createdTime(po.getCreatedTime())
                 .build();
     }
@@ -77,15 +76,15 @@ public class AdminOperationLogRepositoryImpl implements AdminOperationLogReposit
         po.setId(log.getId());
         po.setUserId(log.getUserId());
         po.setUsername(log.getUsername());
-        po.setOperation(log.getOperation());
-        po.setMethod(log.getMethod());
-        po.setParams(log.getParams());
-        po.setIp(log.getIp());
-        po.setLocation(log.getLocation());
+        po.setOperationType(log.getOperation());
+        po.setOperationDesc(log.getOperation());
+        po.setRequestMethod(log.getMethod());
+        po.setRequestParams(log.getParams());
+        po.setRequestIp(log.getIp());
         po.setUserAgent(log.getUserAgent());
-        po.setExecuteTime(log.getExecuteTime());
-        po.setStatus(log.getStatus());
-        po.setErrorMsg(log.getErrorMsg());
+        po.setResponseTimeMs(log.getExecuteTime());
+        po.setResponseStatus(log.getStatus());
+        po.setErrorMessage(log.getErrorMsg());
         return po;
     }
 }

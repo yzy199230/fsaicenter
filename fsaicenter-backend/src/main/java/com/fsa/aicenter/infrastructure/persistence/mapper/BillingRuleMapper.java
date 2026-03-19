@@ -2,8 +2,7 @@ package com.fsa.aicenter.infrastructure.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.fsa.aicenter.infrastructure.persistence.entity.BillingRulePO;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,25 +13,15 @@ import java.util.List;
 @Mapper
 public interface BillingRuleMapper extends BaseMapper<BillingRulePO> {
 
-    /**
-     * 查询有效的计费规则
-     *
-     * @param modelId     模型ID
-     * @param billingType 计费类型
-     * @param time        查询时间点
-     * @return 有效的计费规则（最新的一条）
-     */
+    @Select("SELECT * FROM billing_rule WHERE model_id = #{modelId} AND billing_type = #{billingType} " +
+            "AND effective_time <= #{time} AND (expire_time IS NULL OR expire_time > #{time}) " +
+            "AND status = 1 AND is_deleted = 0 ORDER BY effective_time DESC LIMIT 1")
     BillingRulePO selectEffectiveRule(
         @Param("modelId") Long modelId,
         @Param("billingType") String billingType,
         @Param("time") LocalDateTime time
     );
 
-    /**
-     * 根据模型ID查询所有计费规则
-     *
-     * @param modelId 模型ID
-     * @return 计费规则列表
-     */
+    @Select("SELECT * FROM billing_rule WHERE model_id = #{modelId} AND is_deleted = 0 ORDER BY effective_time DESC")
     List<BillingRulePO> selectByModelId(@Param("modelId") Long modelId);
 }

@@ -2,8 +2,7 @@ package com.fsa.aicenter.infrastructure.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.fsa.aicenter.infrastructure.persistence.entity.RequestLogPO;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,60 +13,36 @@ import java.util.List;
 @Mapper
 public interface RequestLogMapper extends BaseMapper<RequestLogPO> {
 
-    /**
-     * 根据请求ID查询日志
-     *
-     * @param requestId 请求ID
-     * @return 请求日志
-     */
+    @Select("SELECT * FROM request_log WHERE request_id = #{requestId} AND is_deleted = 0")
     RequestLogPO selectByRequestId(@Param("requestId") String requestId);
 
-    /**
-     * 根据API密钥ID和时间范围查询日志
-     *
-     * @param apiKeyId  API密钥ID
-     * @param startTime 开始时间
-     * @param endTime   结束时间
-     * @return 请求日志列表
-     */
+    @Select("SELECT * FROM request_log WHERE api_key_id = #{apiKeyId} " +
+            "AND created_time >= #{startTime} AND created_time <= #{endTime} AND is_deleted = 0 ORDER BY created_time DESC")
     List<RequestLogPO> selectByApiKeyIdAndTimeRange(
         @Param("apiKeyId") Long apiKeyId,
         @Param("startTime") LocalDateTime startTime,
         @Param("endTime") LocalDateTime endTime
     );
 
-    /**
-     * 根据模型ID和时间范围查询日志
-     *
-     * @param modelId   模型ID
-     * @param startTime 开始时间
-     * @param endTime   结束时间
-     * @return 请求日志列表
-     */
+    @Select("SELECT * FROM request_log WHERE model_id = #{modelId} " +
+            "AND created_time >= #{startTime} AND created_time <= #{endTime} AND is_deleted = 0 ORDER BY created_time DESC")
     List<RequestLogPO> selectByModelIdAndTimeRange(
         @Param("modelId") Long modelId,
         @Param("startTime") LocalDateTime startTime,
         @Param("endTime") LocalDateTime endTime
     );
 
-    /**
-     * 根据状态和时间范围查询日志
-     *
-     * @param status    状态（1=成功，0=失败）
-     * @param startTime 开始时间
-     * @param endTime   结束时间
-     * @return 请求日志列表
-     */
+    @Select("SELECT * FROM request_log WHERE status = #{status} " +
+            "AND created_time >= #{startTime} AND created_time <= #{endTime} AND is_deleted = 0 ORDER BY created_time DESC")
     List<RequestLogPO> selectByStatusAndTimeRange(
         @Param("status") Integer status,
         @Param("startTime") LocalDateTime startTime,
         @Param("endTime") LocalDateTime endTime
     );
 
-    /**
-     * 批量插入日志记录
-     *
-     * @param list 日志记录列表
-     */
+    @Insert("<script>INSERT INTO request_log (request_id, api_key_id, model_id, request_type, is_stream, prompt_tokens, completion_tokens, total_tokens, request_ip, user_agent, http_status, response_time_ms, error_message, status, created_time) VALUES " +
+            "<foreach collection='list' item='item' separator=','>" +
+            "(#{item.requestId}, #{item.apiKeyId}, #{item.modelId}, #{item.requestType}, #{item.isStream}, #{item.promptTokens}, #{item.completionTokens}, #{item.totalTokens}, #{item.requestIp}, #{item.userAgent}, #{item.httpStatus}, #{item.responseTimeMs}, #{item.errorMessage}, #{item.status}, #{item.createdTime})" +
+            "</foreach></script>")
     void insertBatch(@Param("list") List<RequestLogPO> list);
 }

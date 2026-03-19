@@ -2,8 +2,7 @@ package com.fsa.aicenter.infrastructure.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.fsa.aicenter.infrastructure.persistence.entity.ApiKeyModelAccessPO;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -13,13 +12,12 @@ import java.util.List;
 @Mapper
 public interface ApiKeyModelAccessMapper extends BaseMapper<ApiKeyModelAccessPO> {
 
-    /**
-     * 根据API密钥ID查询所有访问权限
-     */
+    @Select("SELECT * FROM api_key_model_access WHERE api_key_id = #{apiKeyId} AND is_deleted = 0")
     List<ApiKeyModelAccessPO> selectByApiKeyId(@Param("apiKeyId") Long apiKeyId);
 
-    /**
-     * 删除指定API密钥和模型的访问权限
-     */
+    @Update("UPDATE api_key_model_access SET is_deleted = 1 WHERE api_key_id = #{apiKeyId} AND model_id = #{modelId} AND is_deleted = 0")
     void deleteByApiKeyIdAndModelId(@Param("apiKeyId") Long apiKeyId, @Param("modelId") Long modelId);
+
+    @Update("UPDATE api_key_model_access SET is_deleted = 1 WHERE api_key_id = #{apiKeyId} AND is_deleted = 0")
+    void deleteAllByApiKeyId(@Param("apiKeyId") Long apiKeyId);
 }

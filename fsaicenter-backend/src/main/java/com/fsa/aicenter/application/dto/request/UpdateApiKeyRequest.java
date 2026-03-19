@@ -41,6 +41,9 @@ public class UpdateApiKeyRequest {
     @Schema(description = "IP白名单")
     private Set<String> allowedIpWhitelist;
 
+    @Schema(description = "允许访问的模型ID列表（空表示不限制，null表示不更新）")
+    private Set<Long> allowedModelIds;
+
     @Schema(description = "过期时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime expireTime;

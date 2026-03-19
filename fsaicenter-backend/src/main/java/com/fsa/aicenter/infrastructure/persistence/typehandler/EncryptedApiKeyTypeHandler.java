@@ -4,9 +4,6 @@ import com.fsa.aicenter.common.util.ApiKeyEncryptor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
-import org.apache.ibatis.type.MappedTypes;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
@@ -28,25 +25,24 @@ import java.sql.SQLException;
  * }
  * </pre>
  *
+ * 注意：不能添加 @Component，否则 MyBatis-Plus 会将 BaseTypeHandler<String> 自动注册为
+ * 所有 String 类型的全局 TypeHandler，导致 username 等普通字段也被加密。
+ * 此 TypeHandler 仅通过 @TableField 显式指定使用，由 MyBatis 通过反射实例化。
+ * 加密器通过 EncryptedApiKeyTypeHandler.initEncryptor() 静态方法注入。
+ *
  * @author FSA AI Center
  */
 @Slf4j
-@Component
-@MappedTypes(String.class)
 public class EncryptedApiKeyTypeHandler extends BaseTypeHandler<String> {
 
     private static ApiKeyEncryptor encryptor;
 
     /**
-     * 注入加密器（静态注入）
-     * <p>
-     * MyBatis 类型处理器是通过反射创建的，无法直接使用构造函数注入。
-     * 使用静态字段 + @Autowired 方法注入。
-     * </p>
+     * 初始化加密器（由配置类调用）
      */
-    @Autowired
-    public void setEncryptor(ApiKeyEncryptor encryptor) {
-        EncryptedApiKeyTypeHandler.encryptor = encryptor;
+    public static void initEncryptor(ApiKeyEncryptor apiKeyEncryptor) {
+        encryptor = apiKeyEncryptor;
+        log.info("EncryptedApiKeyTypeHandler 加密器初始化完成");
     }
 
     /**

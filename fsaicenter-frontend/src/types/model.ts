@@ -106,3 +106,58 @@ export interface UpdateProviderRequest {
   sortOrder?: number
   status?: number
 }
+
+// ---------------------------------------------------------------------------
+// Model API Key
+// ---------------------------------------------------------------------------
+
+export interface ModelApiKey {
+  id: number
+  modelId: number
+  keyName: string
+  apiKey: string
+  apiKeyMasked: string
+  weight: number
+  totalRequests: number
+  successRequests: number
+  failedRequests: number
+  lastUsedTime?: string
+  lastSuccessTime?: string
+  lastFailTime?: string
+  healthStatus: number // 1=HEALTHY, 0=UNHEALTHY, -1=DISABLED
+  failCount: number
+  rateLimitPerMinute?: number
+  rateLimitPerDay?: number
+  quotaTotal?: number
+  quotaUsed?: number
+  expireTime?: string
+  status: number
+  sortOrder: number
+  description?: string
+  createdTime: string
+  updatedTime: string
+}
+
+export interface CreateModelApiKeyRequest {
+  keyName: string
+  apiKey: string
+  weight?: number
+  rateLimitPerMinute?: number
+  rateLimitPerDay?: number
+  quotaTotal?: number
+  expireTime?: string
+  sortOrder?: number
+  description?: string
+}
+
+export interface UpdateModelApiKeyRequest {
+  keyName?: string
+  apiKey?: string
+  weight?: number
+  rateLimitPerMinute?: number
+  rateLimitPerDay?: number
+  quotaTotal?: number
+  expireTime?: string
+  sortOrder?: number
+  description?: string
+}

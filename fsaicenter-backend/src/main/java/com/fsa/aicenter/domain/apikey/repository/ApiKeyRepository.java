@@ -20,4 +20,5 @@ public interface ApiKeyRepository {
     void saveModelAccess(Long apiKeyId, Long modelId, boolean allow);
     void deleteModelAccess(Long apiKeyId, Long modelId);
     List<Long> findAccessibleModelIds(Long apiKeyId);
+    void syncModelAccess(Long apiKeyId, java.util.Set<Long> allowedModelIds);
 }

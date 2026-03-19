@@ -2,18 +2,21 @@
 -- PostgreSQL 14+
 -- 创建时间: 2024-01-01
 
+-- 启用 UUID 扩展
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- ============================================
 -- 1. 管理员用户表
 -- ============================================
 CREATE TABLE IF NOT EXISTS admin_user (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL COMMENT 'BCrypt加密',
+    password VARCHAR(255) NOT NULL,
     real_name VARCHAR(100),
     email VARCHAR(100),
     phone VARCHAR(20),
     avatar VARCHAR(500),
-    status INTEGER DEFAULT 1 COMMENT '1:启用 0:禁用',
+    status INTEGER DEFAULT 1,
     last_login_time TIMESTAMP,
     last_login_ip VARCHAR(50),
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -27,6 +30,7 @@ CREATE INDEX idx_admin_user_status ON admin_user(status) WHERE is_deleted = 0;
 COMMENT ON TABLE admin_user IS '管理员用户表';
 COMMENT ON COLUMN admin_user.username IS '用户名';
 COMMENT ON COLUMN admin_user.password IS '密码(BCrypt加密)';
+COMMENT ON COLUMN admin_user.status IS '1:启用 0:禁用';
 
 -- ============================================
 -- 2. 角色表
@@ -55,7 +59,7 @@ CREATE TABLE IF NOT EXISTS admin_permission (
     parent_id BIGINT DEFAULT 0,
     permission_code VARCHAR(100) NOT NULL UNIQUE,
     permission_name VARCHAR(100) NOT NULL,
-    permission_type VARCHAR(20) COMMENT 'MENU/BUTTON/API',
+    permission_type VARCHAR(20),
     permission_path VARCHAR(200),
     icon VARCHAR(100),
     sort_order INTEGER DEFAULT 0,
@@ -69,6 +73,7 @@ CREATE INDEX idx_admin_permission_parent ON admin_permission(parent_id) WHERE is
 CREATE INDEX idx_admin_permission_code ON admin_permission(permission_code) WHERE is_deleted = 0;
 
 COMMENT ON TABLE admin_permission IS '权限表';
+COMMENT ON COLUMN admin_permission.permission_type IS 'MENU/BUTTON/API';
 
 -- ============================================
 -- 4. 用户角色关联表
@@ -137,17 +142,17 @@ CREATE TABLE IF NOT EXISTS ai_provider (
     id BIGSERIAL PRIMARY KEY,
     provider_code VARCHAR(50) NOT NULL UNIQUE,
     provider_name VARCHAR(100) NOT NULL,
-    provider_type VARCHAR(50) COMMENT 'OPENAI/QWEN/WENXIN/SPARK/DOUBAO/OLLAMA/VLLM/GENERIC',
+    provider_type VARCHAR(50),
     base_url VARCHAR(500),
-    protocol_type VARCHAR(20) COMMENT 'OPENAI_COMPATIBLE/CUSTOM',
+    protocol_type VARCHAR(20),
     chat_endpoint VARCHAR(200),
     embedding_endpoint VARCHAR(200),
     image_endpoint VARCHAR(200),
     video_endpoint VARCHAR(200),
-    extra_headers TEXT COMMENT 'JSON格式额外请求头',
-    request_template TEXT COMMENT 'JSON格式请求模板',
-    response_mapping TEXT COMMENT 'JSON格式响应映射',
-    auth_type VARCHAR(20) COMMENT 'BEARER/API_KEY/CUSTOM',
+    extra_headers TEXT,
+    request_template TEXT,
+    response_mapping TEXT,
+    auth_type VARCHAR(20),
     auth_header VARCHAR(50),
     auth_prefix VARCHAR(20),
     api_key_required BOOLEAN DEFAULT true,
@@ -163,6 +168,12 @@ CREATE INDEX idx_provider_code ON ai_provider(provider_code) WHERE is_deleted = 
 CREATE INDEX idx_provider_status ON ai_provider(status) WHERE is_deleted = 0;
 
 COMMENT ON TABLE ai_provider IS 'AI提供商表';
+COMMENT ON COLUMN ai_provider.provider_type IS 'OPENAI/QWEN/WENXIN/SPARK/DOUBAO/OLLAMA/VLLM/GENERIC';
+COMMENT ON COLUMN ai_provider.protocol_type IS 'OPENAI_COMPATIBLE/CUSTOM';
+COMMENT ON COLUMN ai_provider.extra_headers IS 'JSON格式额外请求头';
+COMMENT ON COLUMN ai_provider.request_template IS 'JSON格式请求模板';
+COMMENT ON COLUMN ai_provider.response_mapping IS 'JSON格式响应映射';
+COMMENT ON COLUMN ai_provider.auth_type IS 'BEARER/API_KEY/CUSTOM';
 
 -- ============================================
 -- 8. AI模型表
@@ -172,12 +183,12 @@ CREATE TABLE IF NOT EXISTS ai_model (
     provider_id BIGINT NOT NULL,
     model_code VARCHAR(100) NOT NULL,
     model_name VARCHAR(200) NOT NULL,
-    model_type VARCHAR(50) COMMENT 'CHAT/EMBEDDING/IMAGE/VIDEO/TTS/ASR',
+    model_type VARCHAR(50),
     support_stream BOOLEAN DEFAULT false,
     max_tokens INTEGER,
-    config JSONB COMMENT '模型配置',
+    config JSONB,
     description VARCHAR(500),
-    capabilities JSONB COMMENT '模型能力配置',
+    capabilities JSONB,
     status INTEGER DEFAULT 1,
     sort_order INTEGER DEFAULT 0,
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -192,6 +203,9 @@ CREATE INDEX idx_model_status ON ai_model(status) WHERE is_deleted = 0;
 CREATE INDEX idx_model_code ON ai_model(model_code) WHERE is_deleted = 0;
 
 COMMENT ON TABLE ai_model IS 'AI模型表';
+COMMENT ON COLUMN ai_model.model_type IS 'CHAT/EMBEDDING/IMAGE/VIDEO/TTS/ASR';
+COMMENT ON COLUMN ai_model.config IS '模型配置';
+COMMENT ON COLUMN ai_model.capabilities IS '模型能力配置';
 
 -- ============================================
 -- 9. 模型API Key表（上游提供商的Key）
@@ -200,19 +214,19 @@ CREATE TABLE IF NOT EXISTS model_api_key (
     id BIGSERIAL PRIMARY KEY,
     model_id BIGINT NOT NULL,
     key_name VARCHAR(100),
-    api_key VARCHAR(500) NOT NULL COMMENT '上游提供商API Key',
-    weight INTEGER DEFAULT 1 COMMENT '权重，用于负载均衡',
+    api_key VARCHAR(500) NOT NULL,
+    weight INTEGER DEFAULT 1,
     total_requests BIGINT DEFAULT 0,
     success_requests BIGINT DEFAULT 0,
     failed_requests BIGINT DEFAULT 0,
     last_used_time TIMESTAMP,
     last_success_time TIMESTAMP,
     last_fail_time TIMESTAMP,
-    health_status INTEGER DEFAULT 1 COMMENT '1:健康 0:不健康',
+    health_status INTEGER DEFAULT 1,
     fail_count INTEGER DEFAULT 0,
     rate_limit_per_minute INTEGER,
     rate_limit_per_day INTEGER,
-    quota_total BIGINT COMMENT '-1表示无限制',
+    quota_total BIGINT,
     quota_used BIGINT DEFAULT 0,
     expire_time TIMESTAMP,
     status INTEGER DEFAULT 1,
@@ -228,21 +242,25 @@ CREATE INDEX idx_model_api_key_status ON model_api_key(status) WHERE is_deleted 
 CREATE INDEX idx_model_api_key_health ON model_api_key(health_status) WHERE is_deleted = 0;
 
 COMMENT ON TABLE model_api_key IS '模型API Key表（上游提供商）';
+COMMENT ON COLUMN model_api_key.api_key IS '上游提供商API Key';
+COMMENT ON COLUMN model_api_key.weight IS '权重，用于负载均衡';
+COMMENT ON COLUMN model_api_key.health_status IS '1:健康 0:不健康';
+COMMENT ON COLUMN model_api_key.quota_total IS '-1表示无限制';
 
 -- ============================================
 -- 10. API密钥表（对外提供的Key）
 -- ============================================
 CREATE TABLE IF NOT EXISTS api_key (
     id BIGSERIAL PRIMARY KEY,
-    key_value VARCHAR(100) NOT NULL UNIQUE COMMENT 'API Key值（hash存储）',
+    key_value VARCHAR(100) NOT NULL UNIQUE,
     key_name VARCHAR(100) NOT NULL,
     description VARCHAR(500),
-    quota_total BIGINT DEFAULT -1 COMMENT '总配额，-1表示无限制',
+    quota_total BIGINT DEFAULT -1,
     quota_used BIGINT DEFAULT 0,
     rate_limit_per_minute INTEGER DEFAULT 60,
     rate_limit_per_day INTEGER DEFAULT 10000,
-    allowed_model_types VARCHAR(200) COMMENT '允许的模型类型，逗号分隔',
-    allowed_ip_whitelist TEXT COMMENT 'IP白名单，逗号分隔',
+    allowed_model_types VARCHAR(200),
+    allowed_ip_whitelist TEXT,
     expire_time TIMESTAMP,
     status INTEGER DEFAULT 1,
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -254,6 +272,10 @@ CREATE UNIQUE INDEX idx_api_key_value ON api_key(key_value) WHERE is_deleted = 0
 CREATE INDEX idx_api_key_status ON api_key(status) WHERE is_deleted = 0;
 
 COMMENT ON TABLE api_key IS 'API密钥表（对外提供）';
+COMMENT ON COLUMN api_key.key_value IS 'API Key值（hash存储）';
+COMMENT ON COLUMN api_key.quota_total IS '总配额，-1表示无限制';
+COMMENT ON COLUMN api_key.allowed_model_types IS '允许的模型类型，逗号分隔';
+COMMENT ON COLUMN api_key.allowed_ip_whitelist IS 'IP白名单，逗号分隔';
 
 -- ============================================
 -- 11. API密钥模型访问权限表
@@ -262,7 +284,7 @@ CREATE TABLE IF NOT EXISTS api_key_model_access (
     id BIGSERIAL PRIMARY KEY,
     api_key_id BIGINT NOT NULL,
     model_id BIGINT NOT NULL,
-    access_type INTEGER DEFAULT 1 COMMENT '1:允许 0:禁止',
+    access_type INTEGER DEFAULT 1,
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_deleted INTEGER DEFAULT 0,
     UNIQUE(api_key_id, model_id)
@@ -272,6 +294,7 @@ CREATE INDEX idx_api_key_model_key ON api_key_model_access(api_key_id) WHERE is_
 CREATE INDEX idx_api_key_model_model ON api_key_model_access(model_id) WHERE is_deleted = 0;
 
 COMMENT ON TABLE api_key_model_access IS 'API密钥模型访问权限表';
+COMMENT ON COLUMN api_key_model_access.access_type IS '1:允许 0:禁止';
 
 -- ============================================
 -- 12. 计费规则表
@@ -279,11 +302,11 @@ COMMENT ON TABLE api_key_model_access IS 'API密钥模型访问权限表';
 CREATE TABLE IF NOT EXISTS billing_rule (
     id BIGSERIAL PRIMARY KEY,
     model_id BIGINT NOT NULL,
-    billing_type VARCHAR(50) COMMENT 'TOKEN/IMAGE/AUDIO_DURATION',
-    unit_price DECIMAL(10,6) COMMENT '单位价格（元）',
-    input_unit_price DECIMAL(10,6) COMMENT '输入单价（元），仅TOKEN类型',
-    output_unit_price DECIMAL(10,6) COMMENT '输出单价（元），仅TOKEN类型',
-    unit_amount INTEGER DEFAULT 1000 COMMENT '计费单位数量',
+    billing_type VARCHAR(50),
+    unit_price DECIMAL(10,6),
+    input_unit_price DECIMAL(10,6),
+    output_unit_price DECIMAL(10,6),
+    unit_amount INTEGER DEFAULT 1000,
     currency VARCHAR(10) DEFAULT 'CNY',
     effective_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expire_time TIMESTAMP,
@@ -298,6 +321,11 @@ CREATE INDEX idx_billing_rule_model ON billing_rule(model_id) WHERE is_deleted =
 CREATE INDEX idx_billing_rule_status ON billing_rule(status) WHERE is_deleted = 0;
 
 COMMENT ON TABLE billing_rule IS '计费规则表';
+COMMENT ON COLUMN billing_rule.billing_type IS 'TOKEN/IMAGE/AUDIO_DURATION';
+COMMENT ON COLUMN billing_rule.unit_price IS '单位价格（元）';
+COMMENT ON COLUMN billing_rule.input_unit_price IS '输入单价（元），仅TOKEN类型';
+COMMENT ON COLUMN billing_rule.output_unit_price IS '输出单价（元），仅TOKEN类型';
+COMMENT ON COLUMN billing_rule.unit_amount IS '计费单位数量';
 
 -- ============================================
 -- 13. 计费记录表
@@ -308,7 +336,7 @@ CREATE TABLE IF NOT EXISTS billing_record (
     api_key_id BIGINT NOT NULL,
     model_id BIGINT NOT NULL,
     billing_type VARCHAR(50),
-    usage_amount BIGINT COMMENT '使用量：Token数/图片数/音频秒数',
+    usage_amount BIGINT,
     unit_price DECIMAL(10,6),
     total_cost DECIMAL(12,4),
     currency VARCHAR(10) DEFAULT 'CNY',
@@ -323,6 +351,7 @@ CREATE INDEX idx_billing_record_model ON billing_record(model_id) WHERE is_delet
 CREATE INDEX idx_billing_record_time ON billing_record(billing_time DESC);
 
 COMMENT ON TABLE billing_record IS '计费记录表';
+COMMENT ON COLUMN billing_record.usage_amount IS '使用量：Token数/图片数/音频秒数';
 
 -- ============================================
 -- 14. 请求日志表（分区表）
@@ -332,7 +361,7 @@ CREATE TABLE IF NOT EXISTS request_log (
     request_id VARCHAR(100) NOT NULL,
     api_key_id BIGINT NOT NULL,
     model_id BIGINT NOT NULL,
-    request_type VARCHAR(50) COMMENT 'CHAT/EMBEDDING/IMAGE/AUDIO',
+    request_type VARCHAR(50),
     is_stream BOOLEAN DEFAULT false,
     prompt_tokens INTEGER,
     completion_tokens INTEGER,
@@ -342,7 +371,7 @@ CREATE TABLE IF NOT EXISTS request_log (
     http_status INTEGER,
     response_time_ms INTEGER,
     error_message TEXT,
-    status INTEGER COMMENT '1:成功 0:失败',
+    status INTEGER,
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_deleted INTEGER DEFAULT 0,
     PRIMARY KEY (id, created_time)
@@ -351,12 +380,76 @@ CREATE TABLE IF NOT EXISTS request_log (
 -- 创建分区（按月）
 CREATE TABLE request_log_2024_01 PARTITION OF request_log
     FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
-
 CREATE TABLE request_log_2024_02 PARTITION OF request_log
     FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');
-
 CREATE TABLE request_log_2024_03 PARTITION OF request_log
     FOR VALUES FROM ('2024-03-01') TO ('2024-04-01');
+CREATE TABLE request_log_2024_04 PARTITION OF request_log
+    FOR VALUES FROM ('2024-04-01') TO ('2024-05-01');
+CREATE TABLE request_log_2024_05 PARTITION OF request_log
+    FOR VALUES FROM ('2024-05-01') TO ('2024-06-01');
+CREATE TABLE request_log_2024_06 PARTITION OF request_log
+    FOR VALUES FROM ('2024-06-01') TO ('2024-07-01');
+CREATE TABLE request_log_2024_07 PARTITION OF request_log
+    FOR VALUES FROM ('2024-07-01') TO ('2024-08-01');
+CREATE TABLE request_log_2024_08 PARTITION OF request_log
+    FOR VALUES FROM ('2024-08-01') TO ('2024-09-01');
+CREATE TABLE request_log_2024_09 PARTITION OF request_log
+    FOR VALUES FROM ('2024-09-01') TO ('2024-10-01');
+CREATE TABLE request_log_2024_10 PARTITION OF request_log
+    FOR VALUES FROM ('2024-10-01') TO ('2024-11-01');
+CREATE TABLE request_log_2024_11 PARTITION OF request_log
+    FOR VALUES FROM ('2024-11-01') TO ('2024-12-01');
+CREATE TABLE request_log_2024_12 PARTITION OF request_log
+    FOR VALUES FROM ('2024-12-01') TO ('2025-01-01');
+CREATE TABLE request_log_2025_01 PARTITION OF request_log
+    FOR VALUES FROM ('2025-01-01') TO ('2025-02-01');
+CREATE TABLE request_log_2025_02 PARTITION OF request_log
+    FOR VALUES FROM ('2025-02-01') TO ('2025-03-01');
+CREATE TABLE request_log_2025_03 PARTITION OF request_log
+    FOR VALUES FROM ('2025-03-01') TO ('2025-04-01');
+CREATE TABLE request_log_2025_04 PARTITION OF request_log
+    FOR VALUES FROM ('2025-04-01') TO ('2025-05-01');
+CREATE TABLE request_log_2025_05 PARTITION OF request_log
+    FOR VALUES FROM ('2025-05-01') TO ('2025-06-01');
+CREATE TABLE request_log_2025_06 PARTITION OF request_log
+    FOR VALUES FROM ('2025-06-01') TO ('2025-07-01');
+CREATE TABLE request_log_2025_07 PARTITION OF request_log
+    FOR VALUES FROM ('2025-07-01') TO ('2025-08-01');
+CREATE TABLE request_log_2025_08 PARTITION OF request_log
+    FOR VALUES FROM ('2025-08-01') TO ('2025-09-01');
+CREATE TABLE request_log_2025_09 PARTITION OF request_log
+    FOR VALUES FROM ('2025-09-01') TO ('2025-10-01');
+CREATE TABLE request_log_2025_10 PARTITION OF request_log
+    FOR VALUES FROM ('2025-10-01') TO ('2025-11-01');
+CREATE TABLE request_log_2025_11 PARTITION OF request_log
+    FOR VALUES FROM ('2025-11-01') TO ('2025-12-01');
+CREATE TABLE request_log_2025_12 PARTITION OF request_log
+    FOR VALUES FROM ('2025-12-01') TO ('2026-01-01');
+CREATE TABLE request_log_2026_01 PARTITION OF request_log
+    FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
+CREATE TABLE request_log_2026_02 PARTITION OF request_log
+    FOR VALUES FROM ('2026-02-01') TO ('2026-03-01');
+CREATE TABLE request_log_2026_03 PARTITION OF request_log
+    FOR VALUES FROM ('2026-03-01') TO ('2026-04-01');
+CREATE TABLE request_log_2026_04 PARTITION OF request_log
+    FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
+CREATE TABLE request_log_2026_05 PARTITION OF request_log
+    FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
+CREATE TABLE request_log_2026_06 PARTITION OF request_log
+    FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
+CREATE TABLE request_log_2026_07 PARTITION OF request_log
+    FOR VALUES FROM ('2026-07-01') TO ('2026-08-01');
+CREATE TABLE request_log_2026_08 PARTITION OF request_log
+    FOR VALUES FROM ('2026-08-01') TO ('2026-09-01');
+CREATE TABLE request_log_2026_09 PARTITION OF request_log
+    FOR VALUES FROM ('2026-09-01') TO ('2026-10-01');
+CREATE TABLE request_log_2026_10 PARTITION OF request_log
+    FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
+CREATE TABLE request_log_2026_11 PARTITION OF request_log
+    FOR VALUES FROM ('2026-11-01') TO ('2026-12-01');
+CREATE TABLE request_log_2026_12 PARTITION OF request_log
+    FOR VALUES FROM ('2026-12-01') TO ('2027-01-01');
 
 CREATE INDEX idx_request_log_request_id ON request_log(request_id);
 CREATE INDEX idx_request_log_api_key ON request_log(api_key_id) WHERE is_deleted = 0;
@@ -364,6 +457,8 @@ CREATE INDEX idx_request_log_model ON request_log(model_id) WHERE is_deleted = 0
 CREATE INDEX idx_request_log_time ON request_log(created_time DESC);
 
 COMMENT ON TABLE request_log IS '请求日志表（分区表）';
+COMMENT ON COLUMN request_log.request_type IS 'CHAT/EMBEDDING/IMAGE/AUDIO';
+COMMENT ON COLUMN request_log.status IS '1:成功 0:失败';
 
 -- ============================================
 -- 15. 请求日志详情表
