@@ -69,6 +69,12 @@ public class ApiKeyManagementService {
 
         // 保存
         ApiKey savedApiKey = apiKeyRepository.save(apiKey);
+
+        // 同步模型访问权限
+        if (request.getAllowedModelIds() != null && !request.getAllowedModelIds().isEmpty()) {
+            apiKeyRepository.syncModelAccess(savedApiKey.getId(), request.getAllowedModelIds());
+        }
+
         log.info("创建API密钥成功: id={}, keyName={}", savedApiKey.getId(), savedApiKey.getKeyName());
 
         return savedApiKey.getId();
@@ -117,6 +123,12 @@ public class ApiKeyManagementService {
         }
 
         apiKeyRepository.update(apiKey);
+
+        // 同步模型访问权限（null表示不更新）
+        if (request.getAllowedModelIds() != null) {
+            apiKeyRepository.syncModelAccess(id, request.getAllowedModelIds());
+        }
+
         log.info("更新API密钥成功: id={}, keyName={}", apiKey.getId(), apiKey.getKeyName());
     }
 
@@ -231,6 +243,9 @@ public class ApiKeyManagementService {
             response.setAllowedModelTypes(apiKey.getAccessControl().getAllowedModelTypes());
             response.setAllowedIpWhitelist(apiKey.getAccessControl().getAllowedIpWhitelist());
         }
+
+        // 模型访问权限
+        response.setAllowedModelIds(apiKeyRepository.findAccessibleModelIds(apiKey.getId()));
 
         response.setExpireTime(apiKey.getExpireTime());
         response.setStatus(apiKey.getStatus());

@@ -11,8 +11,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { apiKeyApi } from '@/api/apikey'
 import type { ApiKey, CreateApiKeyRequest, UpdateApiKeyRequest } from '@/types/apikey'
+import { ModelMultiSelect } from '@/components/ModelMultiSelect'
 import { toast } from 'sonner'
-import { Plus, Search, Key, Copy, Pencil, Trash2, Power, RotateCcw, Loader2, Infinity, Clock, Gauge } from 'lucide-react'
+import { Plus, Search, Key, Copy, Pencil, Trash2, Power, RotateCcw, Loader2, Infinity, Clock, Gauge, Shield } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Constants & helpers
@@ -24,6 +25,7 @@ interface FormData {
   quotaTotal: number
   rateLimitPerMinute?: number
   rateLimitPerDay?: number
+  allowedModelIds: number[]
   expireTime: string
 }
 
@@ -33,6 +35,7 @@ const EMPTY_FORM: FormData = {
   quotaTotal: -1,
   rateLimitPerMinute: undefined,
   rateLimitPerDay: undefined,
+  allowedModelIds: [],
   expireTime: '',
 }
 
@@ -273,6 +276,15 @@ function ApiKeyCard({
               {apiKey.rateLimitPerDay}/天
             </Badge>
           )}
+          {apiKey.allowedModelIds && apiKey.allowedModelIds.length > 0 && (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-2 py-0 h-5 text-blue-400 border-blue-500/20 gap-1 tabular-nums"
+            >
+              <Shield className="w-3 h-3" />
+              {apiKey.allowedModelIds.length} 个模型
+            </Badge>
+          )}
           <Badge
             variant="outline"
             className={`text-[10px] px-2 py-0 h-5 border-white/[0.08] gap-1 ${
@@ -412,6 +424,7 @@ export default function ApiKeysPage() {
       quotaTotal: apiKey.quotaTotal,
       rateLimitPerMinute: apiKey.rateLimitPerMinute,
       rateLimitPerDay: apiKey.rateLimitPerDay,
+      allowedModelIds: apiKey.allowedModelIds ?? [],
       expireTime: apiKey.expireTime
         ? apiKey.expireTime.slice(0, 16) // format for datetime-local input
         : '',
@@ -434,6 +447,7 @@ export default function ApiKeysPage() {
           quotaTotal: form.quotaTotal,
           rateLimitPerMinute: form.rateLimitPerMinute,
           rateLimitPerDay: form.rateLimitPerDay,
+          allowedModelIds: form.allowedModelIds,
           expireTime: form.expireTime || undefined,
         }
         await apiKeyApi.update(editingKey.id, payload)
@@ -445,6 +459,7 @@ export default function ApiKeysPage() {
           quotaTotal: form.quotaTotal,
           rateLimitPerMinute: form.rateLimitPerMinute,
           rateLimitPerDay: form.rateLimitPerDay,
+          allowedModelIds: form.allowedModelIds,
           expireTime: form.expireTime || undefined,
         }
         await apiKeyApi.create(payload)
@@ -776,6 +791,18 @@ export default function ApiKeysPage() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* ---- Model Access ---- */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+                模型访问权限
+              </Label>
+              <ModelMultiSelect
+                value={form.allowedModelIds}
+                onChange={(ids) => updateForm('allowedModelIds', ids)}
+              />
             </div>
 
             {/* ---- Expire time ---- */}

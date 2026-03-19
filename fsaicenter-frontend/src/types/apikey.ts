@@ -10,6 +10,7 @@ export interface ApiKey {
   rateLimitPerDay?: number
   allowedModelTypes?: string[]
   allowedIpWhitelist?: string[]
+  allowedModelIds?: number[]
   expireTime?: string
   status: number
   createdTime: string
@@ -24,6 +25,7 @@ export interface CreateApiKeyRequest {
   rateLimitPerDay?: number
   allowedModelTypes?: string[]
   allowedIpWhitelist?: string[]
+  allowedModelIds?: number[]
   expireTime?: string
 }
 
@@ -35,6 +37,7 @@ export interface UpdateApiKeyRequest {
   rateLimitPerDay?: number
   allowedModelTypes?: string[]
   allowedIpWhitelist?: string[]
+  allowedModelIds?: number[]
   expireTime?: string
   status?: number
 }
