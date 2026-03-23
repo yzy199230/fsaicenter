@@ -21,6 +21,8 @@ export interface BillingStats {
   totalCost: number
   totalRequests: number
   totalUsage: number
+  totalInputTokens: number
+  totalOutputTokens: number
   avgUnitPrice: number
 }
 

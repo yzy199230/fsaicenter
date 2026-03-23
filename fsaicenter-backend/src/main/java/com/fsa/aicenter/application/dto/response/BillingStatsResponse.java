@@ -21,6 +21,12 @@ public class BillingStatsResponse {
     @Schema(description = "总使用量（Token数）")
     private Long totalUsage;
 
+    @Schema(description = "总输入Token数")
+    private Long totalInputTokens;
+
+    @Schema(description = "总输出Token数")
+    private Long totalOutputTokens;
+
     @Schema(description = "平均单价")
     private BigDecimal avgUnitPrice;
 }

@@ -58,9 +58,22 @@ public class BillingStatisticsController {
     @RequirePermission("billing:view")
     @GetMapping("/trend")
     public Result<List<BillingTrendResponse>> getTrend(
-            @Parameter(description = "天数，默认7天")
-            @RequestParam(defaultValue = "7") Integer days) {
-        List<BillingTrendResponse> trend = billingStatisticsService.getBillingTrend(days);
+            @Parameter(description = "天数，默认7天（与startTime/endTime互斥）")
+            @RequestParam(required = false) Integer days,
+            @Parameter(description = "开始时间")
+            @RequestParam(required = false)
+            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            LocalDateTime startTime,
+            @Parameter(description = "结束时间")
+            @RequestParam(required = false)
+            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            LocalDateTime endTime) {
+        // 如果提供了日期区间，优先使用日期区间
+        if (startTime != null && endTime != null) {
+            List<BillingTrendResponse> trend = billingStatisticsService.getBillingTrendByRange(startTime, endTime);
+            return Result.success(trend);
+        }
+        List<BillingTrendResponse> trend = billingStatisticsService.getBillingTrend(days != null ? days : 7);
         return Result.success(trend);
     }
 

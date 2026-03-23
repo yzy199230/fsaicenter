@@ -6,8 +6,10 @@ import com.fsa.aicenter.application.dto.response.BillingTrendResponse;
 import com.fsa.aicenter.application.dto.response.ModelCostResponse;
 import com.fsa.aicenter.infrastructure.persistence.entity.BillingRecordPO;
 import com.fsa.aicenter.infrastructure.persistence.entity.ModelPO;
+import com.fsa.aicenter.infrastructure.persistence.entity.RequestLogPO;
 import com.fsa.aicenter.infrastructure.persistence.mapper.BillingRecordMapper;
 import com.fsa.aicenter.infrastructure.persistence.mapper.ModelMapper;
+import com.fsa.aicenter.infrastructure.persistence.mapper.RequestLogMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,7 @@ public class BillingStatisticsService {
 
     private final BillingRecordMapper billingRecordMapper;
     private final ModelMapper modelMapper;
+    private final RequestLogMapper requestLogMapper;
 
     /**
      * 获取计费统计数据
@@ -69,6 +72,39 @@ public class BillingStatisticsService {
                 .reduce(0L, Long::sum);
         response.setTotalUsage(totalUsage);
 
+        // 从请求日志统计输入/输出Token明细（通过requestId关联billing记录）
+        List<String> requestIds = records.stream()
+                .map(BillingRecordPO::getRequestId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        long totalInputTokens = 0L;
+        long totalOutputTokens = 0L;
+        if (!requestIds.isEmpty()) {
+            // 分批查询避免SQL IN子句过长
+            int batchSize = 500;
+            for (int i = 0; i < requestIds.size(); i += batchSize) {
+                List<String> batch = requestIds.subList(i, Math.min(i + batchSize, requestIds.size()));
+                LambdaQueryWrapper<RequestLogPO> logQuery = new LambdaQueryWrapper<>();
+                logQuery.in(RequestLogPO::getRequestId, batch);
+                List<RequestLogPO> logs = requestLogMapper.selectList(logQuery);
+
+                totalInputTokens += logs.stream()
+                        .map(RequestLogPO::getPromptTokens)
+                        .filter(Objects::nonNull)
+                        .mapToLong(Integer::longValue)
+                        .sum();
+                totalOutputTokens += logs.stream()
+                        .map(RequestLogPO::getCompletionTokens)
+                        .filter(Objects::nonNull)
+                        .mapToLong(Integer::longValue)
+                        .sum();
+            }
+        }
+        response.setTotalInputTokens(totalInputTokens);
+        response.setTotalOutputTokens(totalOutputTokens);
+
         // 平均单价
         if (!records.isEmpty()) {
             BigDecimal avgUnitPrice = records.stream()
@@ -94,26 +130,43 @@ public class BillingStatisticsService {
         if (days == null || days <= 0) {
             days = 7;
         }
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(days - 1);
+        return getBillingTrendByRange(startDate, endDate);
+    }
+
+    /**
+     * 按日期区间获取计费趋势
+     *
+     * @param startTime 开始时间
+     * @param endTime   结束时间
+     * @return 计费趋势列表
+     */
+    public List<BillingTrendResponse> getBillingTrendByRange(LocalDateTime startTime, LocalDateTime endTime) {
+        return getBillingTrendByRange(startTime.toLocalDate(), endTime.toLocalDate());
+    }
+
+    private List<BillingTrendResponse> getBillingTrendByRange(LocalDate startDate, LocalDate endDate) {
+        // 一次性查询整个时间范围内的计费记录
+        LambdaQueryWrapper<BillingRecordPO> query = new LambdaQueryWrapper<>();
+        query.between(BillingRecordPO::getBillingTime, startDate.atStartOfDay(), endDate.atTime(LocalTime.MAX))
+                .eq(BillingRecordPO::getIsDeleted, 0);
+        List<BillingRecordPO> allRecords = billingRecordMapper.selectList(query);
+
+        // 按日期分组
+        Map<LocalDate, List<BillingRecordPO>> groupedByDate = allRecords.stream()
+                .collect(Collectors.groupingBy(r -> r.getBillingTime().toLocalDate()));
 
         List<BillingTrendResponse> result = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd");
 
-        for (int i = days - 1; i >= 0; i--) {
-            LocalDate date = LocalDate.now().minusDays(i);
-            LocalDateTime dayStart = date.atStartOfDay();
-            LocalDateTime dayEnd = date.atTime(LocalTime.MAX);
-
-            // 查询当天的计费记录
-            LambdaQueryWrapper<BillingRecordPO> query = new LambdaQueryWrapper<>();
-            query.between(BillingRecordPO::getBillingTime, dayStart, dayEnd)
-                    .eq(BillingRecordPO::getIsDeleted, 0);
-            List<BillingRecordPO> dayRecords = billingRecordMapper.selectList(query);
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            List<BillingRecordPO> dayRecords = groupedByDate.getOrDefault(date, Collections.emptyList());
 
             BillingTrendResponse trend = new BillingTrendResponse();
             trend.setDate(date.format(formatter));
             trend.setRequests((long) dayRecords.size());
 
-            // 计算当天总成本
             BigDecimal dayCost = dayRecords.stream()
                     .map(BillingRecordPO::getTotalCost)
                     .filter(Objects::nonNull)

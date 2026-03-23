@@ -25,7 +25,7 @@ public class FilterConfig {
             ApiKeyAuthenticationFilter filter) {
         FilterRegistrationBean<ApiKeyAuthenticationFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(filter);
-        registration.addUrlPatterns("/api/*");
+        registration.addUrlPatterns("/api/*", "/v1/*");
         registration.setName("apiKeyAuthFilter");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
         return registration;
@@ -39,7 +39,7 @@ public class FilterConfig {
     public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter filter) {
         FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(filter);
-        registration.addUrlPatterns("/api/*");
+        registration.addUrlPatterns("/api/*", "/v1/*");
         registration.setName("rateLimitFltr");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 2);
         return registration;

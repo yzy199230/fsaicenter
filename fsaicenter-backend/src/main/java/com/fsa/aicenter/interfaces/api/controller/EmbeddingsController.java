@@ -140,6 +140,8 @@ public class EmbeddingsController {
                             aiResponse,
                             duration,
                             actualTokens,
+                            aiResponse.getPromptTokens(),
+                            null,
                             httpRequest.getRemoteAddr(),
                             httpRequest.getHeader("User-Agent")
                     );

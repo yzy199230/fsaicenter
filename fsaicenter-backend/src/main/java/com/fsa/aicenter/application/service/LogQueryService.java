@@ -58,9 +58,9 @@ public class LogQueryService {
             wrapper.and(w -> w.like(RequestLogPO::getRequestId, query.getKeyword()));
         }
 
-        // 模型类型筛选
+        // 模型类型筛选（前端传PascalCase如Chat，数据库存UPPERCASE如CHAT）
         if (StringUtils.hasText(query.getModelType())) {
-            wrapper.eq(RequestLogPO::getRequestType, query.getModelType());
+            wrapper.eq(RequestLogPO::getRequestType, query.getModelType().toUpperCase());
         }
 
         // 状态筛选

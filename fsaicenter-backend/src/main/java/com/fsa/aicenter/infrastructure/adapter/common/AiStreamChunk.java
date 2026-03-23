@@ -69,6 +69,11 @@ public class AiStreamChunk {
     private Long created;
 
     /**
+     * 上游原始SSE chunk数据（用于OpenAI兼容接口透传）
+     */
+    private String rawData;
+
+    /**
      * 创建内容chunk
      *
      * @param id    响应ID

@@ -23,6 +23,11 @@ spring:
         connectTimeout: 10000
         idleConnectionTimeout: 10000
 
+# API Key 加密密钥（固定，防止重启后解密失败）
+security:
+  api-key:
+    encryption-key: YXyxLv2QtEoqhktXwkPGyS1Q0DWxymWrM+EQM6Tsc/w=
+
 # 日志配置
 logging:
   level:

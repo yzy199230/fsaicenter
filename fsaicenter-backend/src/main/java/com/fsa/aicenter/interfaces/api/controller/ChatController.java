@@ -142,6 +142,8 @@ public class ChatController {
                             aiResponse,
                             duration,
                             actualTokens,
+                            aiResponse.getPromptTokens(),
+                            aiResponse.getCompletionTokens(),
                             httpRequest.getRemoteAddr(),
                             httpRequest.getHeader("User-Agent")
                     );
@@ -233,6 +235,8 @@ public class ChatController {
 
         // 用于累计token数
         AtomicInteger totalTokens = new AtomicInteger(0);
+        AtomicInteger streamPromptTokens = new AtomicInteger(0);
+        AtomicInteger streamCompletionTokens = new AtomicInteger(0);
         AtomicReference<String> chunkId = new AtomicReference<>();
 
         return chunkFlux
@@ -245,6 +249,10 @@ public class ChatController {
                     // 累计token数（如果chunk中包含usage信息）
                     if (aiChunk.isDone() && aiChunk.getPromptTokens() != null) {
                         totalTokens.set(aiChunk.calculateTotalTokens());
+                        streamPromptTokens.set(aiChunk.getPromptTokens());
+                        if (aiChunk.getCompletionTokens() != null) {
+                            streamCompletionTokens.set(aiChunk.getCompletionTokens());
+                        }
                     }
 
                     ChatStreamChunk chatChunk = toChatStreamChunk(aiChunk);
@@ -288,6 +296,8 @@ public class ChatController {
                             "Stream completed", // 流式响应不记录完整内容
                             duration,
                             actualTokens,
+                            streamPromptTokens.get() > 0 ? streamPromptTokens.get() : null,
+                            streamCompletionTokens.get() > 0 ? streamCompletionTokens.get() : null,
                             httpRequest.getRemoteAddr(),
                             httpRequest.getHeader("User-Agent")
                     );

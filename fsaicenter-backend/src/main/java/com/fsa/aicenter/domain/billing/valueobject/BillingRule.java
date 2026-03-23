@@ -139,7 +139,17 @@ public class BillingRule {
         // 费用 = (使用量 / 单位数量) * 单位价格
         BigDecimal usage = new BigDecimal(metrics.getUsageAmount());
         BigDecimal unit = new BigDecimal(unitAmount);
-        BigDecimal cost = usage.divide(unit, 10, RoundingMode.HALF_UP).multiply(unitPrice);
+        BigDecimal usagePerUnit = usage.divide(unit, 10, RoundingMode.HALF_UP);
+
+        BigDecimal cost;
+        if (billingType == BillingType.TOKEN && unitPrice == null) {
+            // TOKEN类型使用输入/输出分别计价，这里简化为使用输入单价
+            // 因为当前metrics只有总量，无法区分输入输出
+            BigDecimal price = inputUnitPrice != null ? inputUnitPrice : BigDecimal.ZERO;
+            cost = usagePerUnit.multiply(price);
+        } else {
+            cost = usagePerUnit.multiply(unitPrice != null ? unitPrice : BigDecimal.ZERO);
+        }
 
         return new CostAmount(cost, currency);
     }

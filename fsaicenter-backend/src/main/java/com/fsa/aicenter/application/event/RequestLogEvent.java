@@ -94,6 +94,16 @@ public class RequestLogEvent {
     private final Integer tokens;
 
     /**
+     * 输入Token数
+     */
+    private final Integer promptTokens;
+
+    /**
+     * 输出Token数
+     */
+    private final Integer completionTokens;
+
+    /**
      * 事件创建时间
      */
     private final LocalDateTime eventTime;
@@ -130,6 +140,8 @@ public class RequestLogEvent {
         this.clientIp = builder.clientIp;
         this.userAgent = builder.userAgent;
         this.tokens = builder.tokens;
+        this.promptTokens = builder.promptTokens;
+        this.completionTokens = builder.completionTokens;
         this.eventTime = LocalDateTime.now();
     }
 
@@ -156,6 +168,8 @@ public class RequestLogEvent {
         private String clientIp;
         private String userAgent;
         private Integer tokens;
+        private Integer promptTokens;
+        private Integer completionTokens;
 
         public Builder requestId(String requestId) {
             this.requestId = requestId;
@@ -229,6 +243,16 @@ public class RequestLogEvent {
 
         public Builder tokens(Integer tokens) {
             this.tokens = tokens;
+            return this;
+        }
+
+        public Builder promptTokens(Integer promptTokens) {
+            this.promptTokens = promptTokens;
+            return this;
+        }
+
+        public Builder completionTokens(Integer completionTokens) {
+            this.completionTokens = completionTokens;
             return this;
         }
 

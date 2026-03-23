@@ -138,6 +138,8 @@ public class ImageController {
                             aiResponse,
                             duration,
                             null, // 图片生成不计算tokens
+                            null,
+                            null,
                             httpRequest.getRemoteAddr(),
                             httpRequest.getHeader("User-Agent")
                     );

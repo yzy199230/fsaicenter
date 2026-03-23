@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * 模型API Key持久化对象
  */
 @Data
-@TableName("model_api_key")
+@TableName(value = "model_api_key", autoResultMap = true)
 public class ModelApiKeyPO {
 
     @TableId(type = IdType.AUTO)

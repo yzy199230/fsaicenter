@@ -63,7 +63,8 @@ public class BillingRecord {
         record.modelId = rule.getModelId();
         record.billingType = metrics.getBillingType();
         record.usageAmount = metrics.getUsageAmount();
-        record.unitPrice = rule.getUnitPrice();
+        record.unitPrice = rule.getUnitPrice() != null ? rule.getUnitPrice()
+                : (rule.getInputUnitPrice() != null ? rule.getInputUnitPrice() : BigDecimal.ZERO);
         record.totalCost = cost;
         record.billingTime = LocalDateTime.now();
         record.createdTime = LocalDateTime.now();

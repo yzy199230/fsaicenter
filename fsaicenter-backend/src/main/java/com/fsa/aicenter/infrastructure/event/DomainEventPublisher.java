@@ -130,6 +130,7 @@ public class DomainEventPublisher {
     public void publishSuccessLogEvent(String requestId, ApiKey apiKey, AiModel model,
                                        String endpoint, RequestType requestType, Boolean isStream,
                                        Object request, Object response, Long duration, Integer tokens,
+                                       Integer promptTokens, Integer completionTokens,
                                        String clientIp, String userAgent) {
         publishRequestLogEvent(RequestLogEvent.builder()
                 .requestId(requestId)
@@ -144,6 +145,8 @@ public class DomainEventPublisher {
                 .success(true)
                 .httpStatus(200)
                 .tokens(tokens)
+                .promptTokens(promptTokens)
+                .completionTokens(completionTokens)
                 .clientIp(clientIp)
                 .userAgent(userAgent));
     }

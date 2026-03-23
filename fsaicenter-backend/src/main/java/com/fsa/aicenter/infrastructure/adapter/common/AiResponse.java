@@ -67,6 +67,11 @@ public class AiResponse {
      */
     private Long created;
 
+    /**
+     * 上游原始响应JSON（用于OpenAI兼容接口透传）
+     */
+    private String rawResponseBody;
+
     // ==================== 图片生成相关字段 ====================
 
     /**

@@ -78,7 +78,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
         if (provider == null || provider.getProtocolType() == null) {
             return false;
         }
-        return SUPPORTED_PROTOCOLS.contains(provider.getProtocolType());
+        return SUPPORTED_PROTOCOLS.contains(provider.getProtocolType().toLowerCase());
     }
 
     @Override
@@ -103,7 +103,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
                 }
 
                 String bodyString = body.string();
-                log.debug("通用适配器响应: {}", bodyString);
+                log.debug("通用适配器响应: length={}", bodyString.length());
 
                 AiResponse aiResponse = parseResponse(provider, bodyString);
                 recordKeySuccess(selectedKey.getId(), aiResponse.getTotalTokens());
@@ -192,7 +192,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
                                             sink.next(chunk);
                                         }
                                     } catch (Exception e) {
-                                        log.warn("解析SSE数据块失败: {}", data, e);
+                                        log.warn("解析SSE数据块失败", e);
                                     }
                                 }
                             }
@@ -283,7 +283,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
                 }
 
                 String bodyString = body.string();
-                log.debug("通用适配器Embedding响应: {}", bodyString);
+                log.debug("通用适配器Embedding响应: length={}", bodyString.length());
 
                 EmbeddingResponse embeddingResponse = parseEmbeddingResponse(provider, bodyString);
 
@@ -324,7 +324,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
                 }
 
                 String bodyString = body.string();
-                log.debug("通用适配器Image生成响应: {}", bodyString);
+                log.debug("通用适配器Image生成响应: length={}", bodyString.length());
 
                 ImageResponse imageResponse = parseImageResponse(provider, bodyString);
 
@@ -362,7 +362,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
                 }
 
                 String bodyString = body.string();
-                log.debug("通用适配器Video生成响应: {}", bodyString);
+                log.debug("通用适配器Video生成响应: length={}", bodyString.length());
 
                 VideoResponse videoResponse = parseVideoResponse(provider, bodyString);
 
@@ -390,6 +390,8 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
             throw AiProviderException.authError(provider.getCode(), "API Key not configured");
         }
 
+        log.debug("为模型 {} 选择了Key", model.getCode());
+
         String baseUrl = provider.getBaseUrl();
         String endpoint = provider.getChatEndpointOrDefault();
         String url = baseUrl.endsWith("/") ? baseUrl + endpoint.substring(1) : baseUrl + endpoint;
@@ -401,7 +403,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
                 && StrUtil.isNotBlank(provider.getRequestTemplate())) {
             Map<String, Object> variables = buildTemplateVariables(model, request, stream);
             json = applyRequestTemplate(provider.getRequestTemplate(), variables);
-            log.debug("使用请求模板构建请求体: template={}", provider.getRequestTemplate());
+            log.debug("使用请求模板构建请求体");
         } else {
             json = buildOpenAiRequestBody(model, request, stream);
         }
@@ -480,10 +482,39 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
     }
 
     private String buildOpenAiRequestBody(AiModel model, AiRequest request, boolean stream) {
+        // 如果有原始请求体，基于它透传所有参数，只覆盖model和stream
+        if (StrUtil.isNotBlank(request.getRawRequestBody())) {
+            JSONObject body = JSONUtil.parseObj(request.getRawRequestBody());
+            body.set("model", model.getCode());
+            body.set("stream", stream);
+            // 流式请求需要包含stream_options以获取usage数据
+            if (stream) {
+                JSONObject streamOptions = new JSONObject();
+                streamOptions.set("include_usage", true);
+                body.set("stream_options", streamOptions);
+            }
+            // 移除max_completion_tokens，统一用max_tokens（部分上游不支持新参数）
+            Object maxCompletionTokens = body.get("max_completion_tokens");
+            if (maxCompletionTokens != null) {
+                body.remove("max_completion_tokens");
+                if (!body.containsKey("max_tokens") || body.get("max_tokens") == null) {
+                    body.set("max_tokens", maxCompletionTokens);
+                }
+            }
+            return body.toString();
+        }
+
         Map<String, Object> body = new HashMap<>();
         body.put("model", model.getCode());
         body.put("messages", convertMessages(request.getMessages()));
         body.put("stream", stream);
+
+        // 流式请求需要包含stream_options以获取usage数据
+        if (stream) {
+            Map<String, Object> streamOptions = new HashMap<>();
+            streamOptions.put("include_usage", true);
+            body.put("stream_options", streamOptions);
+        }
 
         if (request.getTemperature() != null) {
             body.put("temperature", request.getTemperature());
@@ -597,10 +628,11 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
                     .finishReason(finishReason)
                     .model(json.getStr("model"))
                     .created(json.getLong("created"))
+                    .rawResponseBody(body)
                     .build();
         } catch (Exception e) {
             String providerCode = provider != null ? provider.getCode() : "__generic__";
-            log.error("解析响应失败: {}", body, e);
+            log.error("解析响应失败", e);
             throw AiProviderException.invalidRequest(providerCode, "Failed to parse response: " + e.getMessage());
         }
     }
@@ -709,6 +741,22 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
             JSONObject json = JSONUtil.parseObj(data);
 
             JSONArray choices = json.getJSONArray(CHOICES_FIELD);
+
+            // 检查是否是独立的usage chunk（OpenAI协议中，usage数据可能在choices为空的最后一个chunk中）
+            JSONObject usage = json.getJSONObject("usage");
+            if ((choices == null || choices.isEmpty()) && usage != null) {
+                return AiStreamChunk.builder()
+                        .id(json.getStr("id"))
+                        .model(json.getStr("model"))
+                        .created(json.getLong("created"))
+                        .done(true)
+                        .promptTokens(usage.getInt("prompt_tokens"))
+                        .completionTokens(usage.getInt("completion_tokens"))
+                        .totalTokens(usage.getInt("total_tokens"))
+                        .rawData(data)
+                        .build();
+            }
+
             if (choices == null || choices.isEmpty()) {
                 return null;
             }
@@ -725,7 +773,8 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
                     .id(json.getStr("id"))
                     .model(json.getStr("model"))
                     .created(json.getLong("created"))
-                    .done(done);
+                    .done(done)
+                    .rawData(data);
 
             if (content != null) {
                 builder.delta(content);
@@ -733,7 +782,6 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
 
             if (done) {
                 builder.finishReason(finishReason);
-                JSONObject usage = json.getJSONObject("usage");
                 if (usage != null) {
                     builder.promptTokens(usage.getInt("prompt_tokens"))
                             .completionTokens(usage.getInt("completion_tokens"))
@@ -744,7 +792,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
             return builder.build();
         } catch (Exception e) {
             String providerCode = provider != null ? provider.getCode() : "__generic__";
-            log.error("解析流式数据块失败: {}", data, e);
+            log.error("解析流式数据块失败", e);
             return null;
         }
     }
@@ -778,7 +826,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
         }
 
         String json = JSONUtil.toJsonStr(body);
-        log.debug("通用适配器Embedding请求: url={}, model={}, input={}", url, model.getCode(), request.getInput());
+        log.debug("通用适配器Embedding请求: url={}, model={}", url, model.getCode());
 
         RequestBody requestBody = RequestBody.create(json, JSON_MEDIA_TYPE);
 
@@ -858,7 +906,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
                     .build();
         } catch (Exception e) {
             String providerCode = provider != null ? provider.getCode() : "__generic__";
-            log.error("解析Embedding响应失败: {}", body, e);
+            log.error("解析Embedding响应失败", e);
             throw AiProviderException.invalidRequest(providerCode, "Failed to parse embedding response: " + e.getMessage());
         }
     }
@@ -1011,7 +1059,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
         }
 
         String json = JSONUtil.toJsonStr(body);
-        log.debug("通用适配器Image请求: url={}, model={}, prompt={}", url, model.getCode(), request.getPrompt());
+        log.debug("通用适配器Image请求: url={}, model={}", url, model.getCode());
 
         RequestBody requestBody = RequestBody.create(json, JSON_MEDIA_TYPE);
 
@@ -1085,7 +1133,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
         }
 
         String json = JSONUtil.toJsonStr(body);
-        log.debug("通用适配器Video请求: url={}, model={}, prompt={}", url, model.getCode(), request.getPrompt());
+        log.debug("通用适配器Video请求: url={}, model={}", url, model.getCode());
 
         RequestBody requestBody = RequestBody.create(json, JSON_MEDIA_TYPE);
 
@@ -1157,7 +1205,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
                     .build();
         } catch (Exception e) {
             String providerCode = provider != null ? provider.getCode() : "__generic__";
-            log.error("解析Image响应失败: {}", body, e);
+            log.error("解析Image响应失败", e);
             throw AiProviderException.invalidRequest(providerCode, "Failed to parse image response: " + e.getMessage());
         }
     }
@@ -1297,7 +1345,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
                     .build();
         } catch (Exception e) {
             String providerCode = provider != null ? provider.getCode() : "__generic__";
-            log.error("解析Video响应失败: {}", body, e);
+            log.error("解析Video响应失败", e);
             throw AiProviderException.invalidRequest(providerCode, "Failed to parse video response: " + e.getMessage());
         }
     }
@@ -1427,7 +1475,7 @@ public class GenericOpenAiAdapter implements AiProviderAdapter {
             case 401, 403 -> AiProviderException.authError(providerCode, errorMessage);
             case 429 -> AiProviderException.rateLimitError(providerCode, errorMessage);
             case 400 -> AiProviderException.invalidRequest(providerCode, errorMessage);
-            case 404 -> AiProviderException.modelNotFound(providerCode, "unknown");
+            case 404 -> AiProviderException.modelNotFound(providerCode, errorMessage);
             default -> code >= 500
                     ? AiProviderException.serverError(providerCode, errorMessage, code)
                     : AiProviderException.networkError(providerCode, errorMessage, null);

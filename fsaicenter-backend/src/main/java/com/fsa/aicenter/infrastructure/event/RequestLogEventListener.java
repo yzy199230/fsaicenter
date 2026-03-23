@@ -91,8 +91,9 @@ public class RequestLogEventListener {
         // 构建TokenUsage
         TokenUsage tokenUsage = TokenUsage.zero();
         if (event.getTokens() != null && event.getTokens() > 0) {
-            // 简化实现：总token数，实际应该区分prompt和completion
-            tokenUsage = new TokenUsage(0, 0, event.getTokens());
+            int prompt = event.getPromptTokens() != null ? event.getPromptTokens() : 0;
+            int completion = event.getCompletionTokens() != null ? event.getCompletionTokens() : 0;
+            tokenUsage = new TokenUsage(prompt, completion, event.getTokens());
         }
 
         if (event.getSuccess()) {

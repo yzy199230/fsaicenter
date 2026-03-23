@@ -1,5 +1,7 @@
 package com.fsa.aicenter.infrastructure.adapter.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,6 +17,7 @@ import jakarta.validation.constraints.NotBlank;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Message {
     /**
      * 消息角色
@@ -29,8 +32,10 @@ public class Message {
 
     /**
      * 消息内容
+     * <p>支持字符串格式和OpenAI多模态数组格式</p>
      */
     @NotBlank(message = "消息内容不能为空")
+    @JsonDeserialize(using = ContentDeserializer.class)
     private String content;
 
     /**

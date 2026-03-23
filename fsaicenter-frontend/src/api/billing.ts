@@ -12,6 +12,6 @@ export const billingRuleApi = {
 
 export const billingStatsApi = {
   getStats: (params?: Record<string, any>): Promise<BillingStats> => request.get('/admin/billing/statistics/stats', { params }),
-  getTrend: (days?: number): Promise<BillingTrend[]> => request.get('/admin/billing/statistics/trend', { params: { days } }),
+  getTrend: (params?: Record<string, any>): Promise<BillingTrend[]> => request.get('/admin/billing/statistics/trend', { params }),
   getModelCost: (params?: Record<string, any>): Promise<ModelCost[]> => request.get('/admin/billing/statistics/model-cost', { params }),
 }

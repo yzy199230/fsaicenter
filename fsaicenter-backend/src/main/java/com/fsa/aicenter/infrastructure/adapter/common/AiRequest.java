@@ -215,4 +215,10 @@ public class AiRequest {
      * <p>如：16:9, 9:16, 1:1</p>
      */
     private String aspectRatio;
+
+    /**
+     * 客户端原始请求体JSON
+     * <p>用于透传客户端发送的所有参数（如tools、tool_choice、response_format等）给上游API</p>
+     */
+    private String rawRequestBody;
 }

@@ -122,42 +122,22 @@ public class ApiKeyRepositoryImpl implements ApiKeyRepository {
     public void saveModelAccess(Long apiKeyId, Long modelId, boolean allow) {
         log.debug("Saving model access: apiKeyId={}, modelId={}, allow={}", apiKeyId, modelId, allow);
 
-        try {
-            // 先尝试查询是否存在
-            LambdaQueryWrapper<ApiKeyModelAccessPO> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(ApiKeyModelAccessPO::getApiKeyId, apiKeyId)
-                   .eq(ApiKeyModelAccessPO::getModelId, modelId)
-                   .eq(ApiKeyModelAccessPO::getIsDeleted, 0);
+        // 查询时不过滤 is_deleted，避免软删除后 insert 触发唯一约束冲突
+        // （PostgreSQL 事务中 duplicate key 会导致后续所有操作失败）
+        ApiKeyModelAccessPO existing = modelAccessMapper.selectOneIgnoreLogicDelete(apiKeyId, modelId);
 
-            ApiKeyModelAccessPO existing = modelAccessMapper.selectOne(wrapper);
-
-            if (existing != null) {
-                // 更新access_type
-                existing.setAccessType(allow ? ACCESS_TYPE_ALLOW : ACCESS_TYPE_DENY);
-                modelAccessMapper.updateById(existing);
-                log.debug("Updated model access for apiKeyId={}, modelId={}", apiKeyId, modelId);
-            } else {
-                // 新建记录
-                ApiKeyModelAccessPO po = new ApiKeyModelAccessPO();
-                po.setApiKeyId(apiKeyId);
-                po.setModelId(modelId);
-                po.setAccessType(allow ? ACCESS_TYPE_ALLOW : ACCESS_TYPE_DENY);
-                modelAccessMapper.insert(po);
-                log.debug("Inserted new model access for apiKeyId={}, modelId={}", apiKeyId, modelId);
-            }
-        } catch (org.springframework.dao.DuplicateKeyException e) {
-            // 并发插入导致唯一约束冲突，重试更新
-            log.warn("Duplicate key when inserting model access, retrying update: apiKeyId={}, modelId={}", apiKeyId, modelId);
-            LambdaQueryWrapper<ApiKeyModelAccessPO> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(ApiKeyModelAccessPO::getApiKeyId, apiKeyId)
-                   .eq(ApiKeyModelAccessPO::getModelId, modelId);
-
-            ApiKeyModelAccessPO existing = modelAccessMapper.selectOne(wrapper);
-            if (existing != null) {
-                existing.setAccessType(allow ? ACCESS_TYPE_ALLOW : ACCESS_TYPE_DENY);
-                existing.setIsDeleted(0);  // 确保未被逻辑删除
-                modelAccessMapper.updateById(existing);
-            }
+        if (existing != null) {
+            // 更新 access_type 并恢复软删除（用原生 SQL 绕过 @TableLogic）
+            modelAccessMapper.restoreAndUpdate(existing.getId(), allow ? ACCESS_TYPE_ALLOW : ACCESS_TYPE_DENY);
+            log.debug("Updated model access for apiKeyId={}, modelId={}", apiKeyId, modelId);
+        } else {
+            // 新建记录
+            ApiKeyModelAccessPO po = new ApiKeyModelAccessPO();
+            po.setApiKeyId(apiKeyId);
+            po.setModelId(modelId);
+            po.setAccessType(allow ? ACCESS_TYPE_ALLOW : ACCESS_TYPE_DENY);
+            modelAccessMapper.insert(po);
+            log.debug("Inserted new model access for apiKeyId={}, modelId={}", apiKeyId, modelId);
         }
     }
 
